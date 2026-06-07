@@ -1,0 +1,7 @@
+{
+    "nmap": {
+        "desc": "scans the red and finds open ports",
+        "cmd": "nmap",
+        "conf_path": ""
+    }
+}
