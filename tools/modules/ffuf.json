@@ -1,7 +1,0 @@
-{
-    "ffuf": {
-        "desc": "web crawler",
-        "cmd": "ffuf",
-        "conf_path": ""
-    }
-}

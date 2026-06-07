@@ -1,7 +1,0 @@
-{
-    "nuclei": {
-        "desc": "diay una herramienta mae",
-        "cmd": "nuclei",
-        "conf_path": ""
-    }
-}
