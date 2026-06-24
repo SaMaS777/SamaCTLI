@@ -103,47 +103,63 @@ def discover_models_for_provider(provider: str, api_key: str, show_progress: boo
 
     parser = _get_parser(parser_name)
 
-    try:
-        if show_progress:
-            with Progress(
-                SpinnerColumn(),
-                TextColumn("[progress.description]{task.description}"),
-                console=console,
-                transient=True,
-            ) as progress:
-                task = progress.add_task(f"Discovering models for {provider}...", total=None)
+    max_retries = 3
+    base_delay = 2
+
+    for attempt in range(max_retries):
+        try:
+            if show_progress:
+                with Progress(
+                    SpinnerColumn(),
+                    TextColumn("[progress.description]{task.description}"),
+                    console=console,
+                    transient=True,
+                ) as progress:
+                    task = progress.add_task(f"Discovering models for {provider}...", total=None)
+                    response = requests.get(url, headers=headers, timeout=30)
+                    progress.update(task, completed=True)
+            else:
+                print_info(f"Discovering models for {provider}...")
                 response = requests.get(url, headers=headers, timeout=30)
-                progress.update(task, completed=True)
-        else:
-            print_info(f"Discovering models for {provider}...")
-            response = requests.get(url, headers=headers, timeout=30)
 
-        if response.status_code == 401:
-            print_error(f"Invalid API key for {provider}")
-            return []
-        if response.status_code == 429:
-            print_error(f"Rate limited by {provider}. Try again later.")
-            return []
-        if response.status_code != 200:
-            print_error(f"Failed to fetch models from {provider}: HTTP {response.status_code}")
-            return []
+            if response.status_code == 401:
+                print_error(f"Invalid API key for {provider}")
+                return []
+            if response.status_code == 429:
+                if attempt < max_retries - 1:
+                    delay = base_delay * (2 ** attempt)
+                    print_warning(f"Rate limited by {provider}. Retrying in {delay}s... (attempt {attempt + 1}/{max_retries})")
+                    import time
+                    time.sleep(delay)
+                    continue
+                print_error(f"Rate limited by {provider}. Max retries exceeded.")
+                return []
+            if response.status_code != 200:
+                print_error(f"Failed to fetch models from {provider}: HTTP {response.status_code}")
+                return []
 
-        data = response.json()
-        models = parser(data)
-        return models
+            data = response.json()
+            models = parser(data)
+            return models
 
-    except requests.exceptions.Timeout:
-        print_error(f"Timeout connecting to {provider}")
-        return []
-    except requests.exceptions.ConnectionError:
-        print_error(f"Network error connecting to {provider}")
-        return []
-    except json.JSONDecodeError:
-        print_error(f"Invalid response from {provider}")
-        return []
-    except Exception as e:
-        print_error(f"Unexpected error discovering models for {provider}: {e}")
-        return []
+        except requests.exceptions.Timeout:
+            if attempt < max_retries - 1:
+                delay = base_delay * (2 ** attempt)
+                print_warning(f"Timeout connecting to {provider}. Retrying in {delay}s...")
+                import time
+                time.sleep(delay)
+                continue
+            print_error(f"Timeout connecting to {provider}")
+            return []
+        except requests.exceptions.ConnectionError:
+            print_error(f"Network error connecting to {provider}")
+            return []
+        except json.JSONDecodeError:
+            print_error(f"Invalid response from {provider}")
+            return []
+        except Exception as e:
+            print_error(f"Unexpected error discovering models for {provider}: {e}")
+            return []
 
 
 def discover_all_models(show_progress: bool = True) -> dict[str, list[str]]:

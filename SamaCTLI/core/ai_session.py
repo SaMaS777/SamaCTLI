@@ -1,3 +1,4 @@
+import asyncio
 import json
 import re
 from datetime import datetime
@@ -108,7 +109,10 @@ class AIChatSession:
             return "Error: Failed to initialize API client"
         self.add_to_history("user", user_message)
 
-        while True:
+        max_retries = 3
+        base_delay = 2
+
+        for attempt in range(max_retries):
             try:
                 response = await self.client.chat.completions.create(
                     model=self.model,
@@ -146,7 +150,18 @@ class AIChatSession:
 
                 self.add_to_history("assistant", ai_response)
                 return ai_response
+
             except Exception as e:
+                error_str = str(e)
+                if "429" in error_str or "RESOURCE_EXHAUSTED" in error_str or "rate limit" in error_str.lower():
+                    if attempt < max_retries - 1:
+                        delay = base_delay * (2 ** attempt)
+                        print_warning(f"Rate limited. Retrying in {delay}s... (attempt {attempt + 1}/{max_retries})")
+                        await asyncio.sleep(delay)
+                        continue
+                    else:
+                        print_error(f"Rate limit exceeded after {max_retries} attempts")
+                        return f"Error: Rate limit exceeded. Please wait before trying again or switch models.\nDetails: {e}"
                 print_error(f"API error: {e}")
                 return f"Error: {e}"
 
