@@ -2,7 +2,6 @@ import asyncio
 import sys
 from pathlib import Path
 
-from SamaCTLI.ai import run_ai_menu
 from SamaCTLI.menus import run_apikeys_menu, run_models_menu, run_results_menu, run_tools_menu
 from SamaCTLI.tools import get_active_tools
 from SamaCTLI.ui import (
@@ -12,6 +11,7 @@ from SamaCTLI.ui import (
     print_info,
     print_menu,
     print_success,
+    print_warning,
     prompt_input,
     wait_for_enter,
 )
@@ -41,9 +41,8 @@ async def main() -> None:
                 ("2", "Source"),
                 ("3", "Help"),
                 ("4", "Results"),
-                ("5", "AI Menu (Legacy)"),
-                ("A", "API Keys"),
-                ("M", "AI Models"),
+                ("A", "API Keys (New Multi-Provider AI)"),
+                ("M", "AI Models & Chat"),
             ],
             "Exit",
         )
@@ -69,8 +68,6 @@ async def main() -> None:
             wait_for_enter()
         elif choice == "4":
             await run_results_menu()
-        elif choice == "5":
-            await run_ai_menu()
         elif choice == "A":
             await run_apikeys_menu()
         elif choice == "M":

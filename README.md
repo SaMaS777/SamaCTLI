@@ -6,25 +6,21 @@
 
 - **Tool Management** - Register, list, and execute CLI tools (nmap, nikto, gobuster, etc.)
 - **Results Viewer** - Browse and view saved output from tool executions
-- **AI Assistant** - Three specialized modes:
-  - **Coder** (DeepSeek v4 Pro) - Low-level programming, optimization
-  - **General** (Kimi K2.6) - Architecture, system design
-  - **Pentesting** (Mistral Medium) - Security analysis, exploit explanation, code auditing
 - **AI Integration System** - Full multi-provider AI support with tool access:
-  - **API Key Management** - Encrypted storage for multiple providers (Google, OpenAI, NVIDIA, Anthropic, custom)
+  - **API Key Management** - Encrypted storage for multiple providers (Google, Anthropic, custom)
   - **Automatic Model Discovery** - Fetches available models from provider APIs
   - **Interactive AI Chat** - 10 built-in pentesting tools (shell, nmap, gobuster, whois, curl, port_scan, python, file_read, file_write, analyze_file) with user confirmation
 - **Secure Execution** - No shell injection, 60s timeout, input validation
-- **Persistent Chat** - AI remembers conversation context per mode
 
 ## Quick Start
 
 ### Prerequisites
 
 - Python 3.11+
-- At least one AI provider API key (NVIDIA, Google, OpenAI, Anthropic, or OpenAI-compatible)
+- At least one AI provider API key (Google, Anthropic, or OpenAI-compatible)
+- Git
 
-### Installation
+### Installation (Linux/macOS)
 
 ```bash
 # Clone the repository
@@ -39,20 +35,25 @@ source .venv/bin/activate
 pip install -e ".[dev]"
 ```
 
-### Configuration
+### Installation (Windows)
 
-**Legacy AI Menu (NVIDIA only):**
-Create `.env` in the project root:
+```powershell
+# Clone the repository
+git clone https://github.com/SaMaS777/SamaCTLI
+cd SamaCTLI
 
-```bash
-NVIDIA_API_KEY=your_nvidia_api_key_here
-BASE_URL=https://integrate.api.nvidia.com/v1
+# Create virtual environment
+python -m venv .venv
+.venv\Scripts\activate
+
+# Install dependencies
+pip install -e ".[dev]"
 ```
 
-The legacy AI roles are defined in `ai_config.json`. You can customize models and prompts there.
+### Configuration
 
 **New AI Integration System (Multi-provider):**
-API keys are managed interactively via the `[A] API Keys` menu and stored encrypted at `~/.samactli/api_keys.enc`. No `.env` required for new features.
+API keys are managed interactively via the `[A] API Keys` menu and stored encrypted at `~/.samactli/api_keys.enc` (Linux/macOS) or `%USERPROFILE%\.samactli\api_keys.enc` (Windows). No `.env` required.
 
 ## Usage
 
@@ -76,9 +77,8 @@ python -m SamaCTLI
   [2] Source
   [3] Help
   [4] Results
-  [5] AI Menu (Legacy - NVIDIA only)
-  [A] API Keys
-  [M] AI Models
+  [A] API Keys (Multi-Provider AI)
+  [M] AI Models & Chat
   [0] Exit
 ```
 
@@ -147,105 +147,123 @@ View any file with pagination (200 lines max per view).
 
 ---
 
-## AI Menu
+## AI Integration System
+
+The new AI Integration System provides multi-provider support with tool access for pentesting workflows.
+
+### API Keys Menu
 
 ```
-[5] AI Menu
+[A] API Keys
 ```
 
-Select a role:
+Manage encrypted API keys for multiple providers:
+
+| Option | Action |
+|--------|--------|
+| `[1] Add API Key` | Enter provider name and API key (auto-triggers model discovery) |
+| `[2] List Providers` | Show saved providers with masked keys (e.g., `sk-****1234`) |
+| `[3] Delete Provider` | Remove a provider and its models |
+| `[4] Re-sync Models` | Re-discover models for a provider |
+
+**Supported Providers:**
+- **Google** - Generative AI API (Gemini models)
+- **Anthropic** - Hardcoded Claude models (no list endpoint)
+- **Custom** - Any OpenAI-compatible endpoint
+
+Keys are encrypted with Fernet (AES-256) using a machine-derived key, stored at `~/.samactli/api_keys.enc` (Linux/macOS) or `%USERPROFILE%\.samactli\api_keys.enc` (Windows).
+
+### AI Models Menu
 
 ```
-[1] Coder Mode         (DeepSeek v4 Pro)
-[2] General Assistant  (Kimi K2.6)
-[3] Pentesting Mode    (Mistral Medium)
-[0] Exit to Main Menu
+[M] AI Models
 ```
 
-### Chat Commands
+Dynamically lists discovered models per provider:
 
-Inside a chat session:
+```
+[1] Google  (3 models)
+[2] Custom  (5 models)
+[0] Back
+```
+
+Select a provider, then a model:
+
+```
+[1] gemini-1.5-pro
+[2] gemini-1.5-flash
+[3] gemini-pro
+[0] Back
+```
+
+### Interactive AI Chat with Tool Access
+
+When you select a model, a full chat session launches with tool support:
+
+```
+┌────────────────────────────────────────────────────────────┐
+│ AI Chat Session                                            │
+│ Provider: Google  Model: gemini-1.5-pro                    │
+│ Tools: shell, file_read, file_write, python, nmap, ...    │
+│ Session: 20260115_143022                                   │
+└────────────────────────────────────────────────────────────┘
+Type 'help' for commands, 'exit' to quit
+```
+
+#### Available Tools
+
+| Tool | Description |
+|------|-------------|
+| `shell` | Run any shell command |
+| `file_read` | Read file content |
+| `file_write` | Write AI output to file |
+| `python` | Execute Python code |
+| `nmap` | Run nmap scans |
+| `gobuster` | Directory/DNS brute force |
+| `whois` | WHOIS lookups |
+| `curl` | HTTP requests |
+| `port_scan` | Socket-based port scanner |
+| `analyze_file` | Pass file to AI for analysis |
+
+#### Tool Invocation Flow
+
+1. AI responds with tool request:
+   ```json
+   {"tool": "nmap", "command": "-sV 192.168.1.1"}
+   ```
+
+2. CLI prompts for confirmation:
+   ```
+   AI wants to run: nmap → -sV 192.168.1.1 — Allow? [y/N]:
+   ```
+
+3. If allowed: executes, returns output to AI
+4. If denied: informs AI, continues conversation
+
+#### Special Chat Commands
 
 | Command | Action |
 |---------|--------|
-| `volver` / `exit` | Return to AI menu |
-| `clear` | Reset conversation memory |
-| (any text) | Send to AI |
+| `help` | Show available tools and commands |
+| `tools` | Toggle enabled tools for this session |
+| `save` | Save conversation to `~/.samactli/chat_history/` |
+| `clear` | Clear conversation history |
+| `exit` | Return to model menu |
 
-### Example: Pentesting Mode
-
-```
-SAMA > I found port 445 open on a Windows 2019 server. What should I check?
-
-[Connecting to Pentesting & Auditoría (Mistral Medium)...]
-
-For port 445 (SMB) on Windows 2019, check:
-
-1. **SMB Signing** - `nmap --script smb2-security-mode 192.168.1.10`
-2. **Null Sessions** - `smbclient -L //192.168.1.10 -N`
-3. **EternalBlue (MS17-010)** - `nmap --script smb-vuln-ms17-010 192.168.1.10`
-4. **SMB Shares** - `enum4linux -S 192.168.1.10`
-5. **Pipe Enumeration** - `nmap --script smb-enum-* 192.168.1.10`
-
-Also check for:
-- SMBv1 enabled (deprecated, vulnerable)
-- Guest access enabled
-- Weak share permissions
-```
-
-### Example: Coder Mode
+#### Example: Nmap Scan via AI
 
 ```
-SAMA > Write a Python async port scanner using asyncio
+You: Scan 192.168.1.0/24 for open ports
 
-[Connecting to Coder (DeepSeek v4 Pro)...]
+AI: I'll run an nmap scan to discover open ports.
+{"tool": "nmap", "command": "-p- --open 192.168.1.0/24"}
 
-```python
-import asyncio
-import socket
-from typing import List
+AI wants to run: nmap → -p- --open 192.168.1.0/24 — Allow? [y/N]: y
 
-async def scan_port(host: str, port: int, timeout: float = 1.0) -> bool:
-    try:
-        _, writer = await asyncio.wait_for(
-            asyncio.open_connection(host, port),
-            timeout=timeout
-        )
-        writer.close()
-        await writer.wait_closed()
-        return True
-    except (asyncio.TimeoutError, ConnectionRefusedError, OSError):
-        return False
-
-async def scan_range(host: str, ports: range, concurrency: int = 100) -> List[int]:
-    semaphore = asyncio.Semaphore(concurrency)
-    
-    async def bounded_scan(port: int) -> int | None:
-        async with semaphore:
-            if await scan_port(host, port):
-                return port
-            return None
-    
-    tasks = [bounded_scan(p) for p in ports]
-    results = await asyncio.gather(*tasks)
-    return [p for p in results if p is not None]
-
-# Usage
-if __name__ == "__main__":
-    open_ports = asyncio.run(scan_range("192.168.1.1", range(1, 1025)))
-    print(f"Open ports: {open_ports}")
+[Executing...]
+AI: Scan complete. Found open ports: 22, 80, 443, 3306 on 192.168.1.10.
+    Would you like me to run service version detection on these?
 ```
-
-Key features:
-- Semaphore for concurrency control
-- Proper timeout handling
-- Type hints throughout
-- Clean async/await patterns
-```
-
----
-
-## AI Integration System (New)
 
 The new AI Integration System provides multi-provider support with tool access for pentesting workflows.
 

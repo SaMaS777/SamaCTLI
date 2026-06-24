@@ -1,0 +1,7 @@
+{
+    "nmap": {
+        "desc": "Web crawker",
+        "cmd": "nmap",
+        "conf_path": ""
+    }
+}
