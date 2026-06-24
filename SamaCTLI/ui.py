@@ -1,17 +1,20 @@
-import subprocess
+import os
 import sys
+import time
 
 from SamaCTLI.constants import BLUE, GREEN, RED, RESET, WHITE, YELLOW
 
 CLEAR_SCREEN = "\033[H\033[2J"
+CLEAR_SCROLLBACK = "\033[H\033[2J\033[3J"
 
 
 def clear() -> None:
-    try:
-        subprocess.run(["reset"], check=False, capture_output=True)
-    except Exception:
+    if os.isatty(sys.stdout.fileno()):
+        sys.stdout.write(CLEAR_SCROLLBACK)
+    else:
         sys.stdout.write(CLEAR_SCREEN)
-        sys.stdout.flush()
+    sys.stdout.flush()
+    time.sleep(0.05)
 
 
 def print_banner(title: str, subtitle: str = "") -> None:
