@@ -1,0 +1,7 @@
+{
+    "katana": {
+        "desc": "Pentesting tool",
+        "cmd": "katana",
+        "conf_path": ""
+    }
+}
