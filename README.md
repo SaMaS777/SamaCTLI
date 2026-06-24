@@ -28,7 +28,7 @@
 
 ```bash
 # Clone the repository
-git clone <your-repo-url>
+git clone https://github.com/SaMaS777/SamaCTLI
 cd SamaCTLI
 
 # Create virtual environment
