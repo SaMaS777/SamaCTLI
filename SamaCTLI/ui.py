@@ -1,11 +1,17 @@
+import subprocess
 import sys
 
-from SamaCTLI.constants import BLUE, CLEAR_SCREEN, GREEN, RED, RESET, WHITE, YELLOW
+from SamaCTLI.constants import BLUE, GREEN, RED, RESET, WHITE, YELLOW
+
+CLEAR_SCREEN = "\033[H\033[2J"
 
 
 def clear() -> None:
-    sys.stdout.write(CLEAR_SCREEN)
-    sys.stdout.flush()
+    try:
+        subprocess.run(["reset"], check=False, capture_output=True)
+    except Exception:
+        sys.stdout.write(CLEAR_SCREEN)
+        sys.stdout.flush()
 
 
 def print_banner(title: str, subtitle: str = "") -> None:
