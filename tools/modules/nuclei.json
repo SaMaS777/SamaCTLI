@@ -1,7 +1,0 @@
-{
-    "nuclei": {
-        "desc": "Vulnerabilities scan",
-        "cmd": "nuclei",
-        "conf_path": ""
-    }
-}
